@@ -61,18 +61,10 @@ function mousedragObservable() {
 function pureObservableDragRect() {
   class Point {
     constructor(public readonly x: number, public readonly y: number) {}
-    add(p: Point) {
-      return new Point(this.x + p.x, this.y + p.y);
-    }
-    sub(p: Point) {
-      return new Point(this.x - p.x, this.y - p.y);
-    }
-  }
+    add(p: Point) { return new Point(this.x + p.x, this.y + p.y) }
+    sub(p: Point) { return new Point(this.x - p.x, this.y - p.y) }}
   class MousePosEvent extends Point {
-    constructor(e: MouseEvent) {
-      super(e.clientX, e.clientY);
-    }
-  }
+    constructor(e: MouseEvent) { super(e.clientX, e.clientY) }}
   class DownEvent extends MousePosEvent {}
   class DragEvent extends MousePosEvent {}
   type State = Readonly<{
@@ -87,8 +79,7 @@ function pureObservableDragRect() {
     mouseup = fromEvent<MouseEvent>(svg, 'mouseup');
   const initRect = new Point(
     Number(rect.getAttribute('x')),
-    Number(rect.getAttribute('y'))
-  );
+    Number(rect.getAttribute('y')));
 
   mousedown
     .pipe(
@@ -96,16 +87,13 @@ function pureObservableDragRect() {
         mousemove.pipe(
           takeUntil(mouseup),
           map((mouseDragEvent) => new DragEvent(mouseDragEvent)),
-          startWith(new DownEvent(mouseDownEvent))
-        )
-      ),
+          startWith(new DownEvent(mouseDownEvent)))),
       scan(
         (a: State, e: MousePosEvent) =>
           e instanceof DownEvent
             ? { rect: a.rect, offset: a.rect.sub(e) }
             : { rect: e.add(a.offset), offset: a.offset },
-        <State>{ rect: initRect }
-      )
+        <State>{ rect: initRect })
     )
     .subscribe((e) => {
       rect.setAttribute('x', String(e.rect.x));
