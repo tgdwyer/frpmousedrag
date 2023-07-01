@@ -53,6 +53,7 @@ function mousedragObservable() {
      rect.setAttribute('y', String(y))
    });
 }
+
 /**
  * Tidy up the stream logic such that all state is managed
  * by a pure function passed to scan.
