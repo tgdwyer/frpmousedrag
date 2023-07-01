@@ -59,52 +59,57 @@ function mousedragObservable() {
  * by a pure function passed to scan.
  */
 function pureObservableDragRect() {
-  interface Point { readonly x:number, readonly y:number }
-  abstract class MousePosEvent implements Point { 
-    readonly x:number; readonly y:number;
-    constructor(e:MouseEvent) {
-      [this.x,this.y] = [e.clientX, e.clientY]
-    } 
+  class Point {
+    constructor(public readonly x: number, public readonly y: number) {}
+    add(p: Point) {
+      return new Point(this.x + p.x, this.y + p.y);
+    }
+    sub(p: Point) {
+      return new Point(this.x - p.x, this.y - p.y);
+    }
+  }
+  class MousePosEvent extends Point {
+    constructor(e: MouseEvent) {
+      super(e.clientX, e.clientY);
+    }
   }
   class DownEvent extends MousePosEvent {}
   class DragEvent extends MousePosEvent {}
   type State = Readonly<{
-    rect:Point,
-    downrect:Point,
-    downpos:Point
-  }>
-  const svg = document.getElementById("svgCanvas")!;
-  const rect = document.getElementById("draggableRect")!;
+    rect: Point;
+    offset: Point;
+  }>;
+  const svg = document.getElementById('svgCanvas')!;
+  const rect = document.getElementById('draggableRect')!;
 
-  const mousedown = fromEvent<MouseEvent>(rect,'mousedown'),
-        mousemove = fromEvent<MouseEvent>(svg,'mousemove'),
-        mouseup = fromEvent<MouseEvent>(svg,'mouseup');
-  const initRectPos:Point = {
-    x:Number(rect.getAttribute('x')),
-    y:Number(rect.getAttribute('y'))
-  }
+  const mousedown = fromEvent<MouseEvent>(rect, 'mousedown'),
+    mousemove = fromEvent<MouseEvent>(svg, 'mousemove'),
+    mouseup = fromEvent<MouseEvent>(svg, 'mouseup');
+  const initRect = new Point(
+    Number(rect.getAttribute('x')),
+    Number(rect.getAttribute('y'))
+  );
 
   mousedown
     .pipe(
-      mergeMap(mouseDownEvent =>
+      mergeMap((mouseDownEvent) =>
         mousemove.pipe(
           takeUntil(mouseup),
-          map(mouseDragEvent=>new DragEvent(mouseDragEvent)),
-          startWith(new DownEvent(mouseDownEvent)))),
-      scan((a:State,e:MousePosEvent)=> 
-        e instanceof DownEvent
-        ? {...a,
-            downrect:a.rect,
-            downpos:{x:e.x,y:e.y} }
-        : {...a,
-            rect:{
-              x:e.x + a.downrect.x - a.downpos.x,
-              y:e.y + a.downrect.y - a.downpos.y} }
-      ,<State>{ rect:initRectPos })
+          map((mouseDragEvent) => new DragEvent(mouseDragEvent)),
+          startWith(new DownEvent(mouseDownEvent))
+        )
+      ),
+      scan(
+        (a: State, e: MousePosEvent) =>
+          e instanceof DownEvent
+            ? { rect: a.rect, offset: a.rect.sub(e) }
+            : { rect: e.add(a.offset), offset: a.offset },
+        <State>{ rect: initRect }
+      )
     )
-   .subscribe(e => {
-     rect.setAttribute('x', String(e.rect.x))
-     rect.setAttribute('y', String(e.rect.y))
-   });
+    .subscribe((e) => {
+      rect.setAttribute('x', String(e.rect.x));
+      rect.setAttribute('y', String(e.rect.y));
+    });
 }
 setTimeout(pureObservableDragRect);
