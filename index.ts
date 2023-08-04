@@ -68,8 +68,8 @@ function pureObservableDragRect() {
   class DownEvent extends MousePosEvent {}
   class DragEvent extends MousePosEvent {}
   type State = Readonly<{
-    rect: Point;
-    offset: Point;
+    pos: Point;
+    offset?: Point;
   }>;
   const svg = document.getElementById('svgCanvas')!;
   const rect = document.getElementById('draggableRect')!;
@@ -77,9 +77,11 @@ function pureObservableDragRect() {
   const mousedown = fromEvent<MouseEvent>(rect, 'mousedown'),
     mousemove = fromEvent<MouseEvent>(svg, 'mousemove'),
     mouseup = fromEvent<MouseEvent>(svg, 'mouseup');
-  const initRect = new Point(
-    Number(rect.getAttribute('x')),
-    Number(rect.getAttribute('y')));
+
+  const initialState: State = { 
+    pos: new Point(
+      Number(rect.getAttribute('x')),
+      Number(rect.getAttribute('y')))};
 
   mousedown
     .pipe(
@@ -91,13 +93,13 @@ function pureObservableDragRect() {
       scan(
         (a: State, e: MousePosEvent) =>
           e instanceof DownEvent
-            ? { rect: a.rect, offset: a.rect.sub(e) }
-            : { rect: e.add(a.offset), offset: a.offset },
-        <State>{ rect: initRect })
+            ? { pos: a.pos, offset: a.pos.sub(e) }
+            : { pos: e.add(a.offset), offset: a.offset },
+        initialState)
     )
     .subscribe((e) => {
-      rect.setAttribute('x', String(e.rect.x));
-      rect.setAttribute('y', String(e.rect.y));
+      rect.setAttribute('x', String(e.pos.x));
+      rect.setAttribute('y', String(e.pos.y));
     });
 }
 setTimeout(pureObservableDragRect);
